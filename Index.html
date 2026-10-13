@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central Studio - Work Log</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bg: #f4f7f6;
+            --surface: #ffffff;
+            --text: #333333;
+            --border: #dddddd;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: var(--surface);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 { margin-top: 0; text-align: center; }
+        
+        /* Screen 1: Selection */
+        #selection-screen { display: flex; flex-direction: column; gap: 15px; }
+        .name-btn {
+            background-color: var(--primary); color: white;
+            border: none; padding: 15px; border-radius: 6px;
+            font-size: 16px; cursor: pointer; transition: 0.2s;
+        }
+        .name-btn:hover { background-color: #004494; }
+        .sheet-btn {
+            background-color: #217346; color: white; text-align: center;
+            text-decoration: none; border: none; padding: 12px; border-radius: 6px;
+            font-size: 14px; margin-top: 15px; transition: 0.2s; display: block;
+        }
+        .sheet-btn:hover { background-color: #175232; }
+
+        /* Screen 2: Form */
+        #form-screen { display: none; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px;}
+        input, select {
+            width: 100%; padding: 10px; border: 1px solid var(--border);
+            border-radius: 4px; box-sizing: border-box; font-family: inherit;
+        }
+        input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
+        
+        .header-info {
+            background: #eef2f5; padding: 10px; border-radius: 4px;
+            margin-bottom: 20px; font-size: 14px; color: #333; font-weight: bold;
+            text-align: center;
+        }
+        
+        .submit-btn {
+            background-color: #28a745; color: white; border: none;
+            padding: 12px; width: 100%; border-radius: 6px;
+            font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px;
+        }
+        .submit-btn:hover { background-color: #218838; }
+        .back-btn {
+            background: none; border: none; color: var(--primary);
+            cursor: pointer; padding: 0; margin-bottom: 15px; font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Screen 1: Assignee Selection -->
+    <div id="selection-screen">
+        <h2>Who is logging work?</h2>
+        <button class="name-btn" onclick="openForm('Hemant')">Hemant</button>
+        <button class="name-btn" onclick="openForm('Aditya')">Aditya</button>
+        <button class="name-btn" onclick="openForm('Purushottam')">Purushottam</button>
+        
+        <!-- Updated: Button to view the Google Sheet -->
+        <a href="https://docs.google.com/spreadsheets/d/1FMSI8IOxTMIAoNmLPnQA-hW50Dvxwg9p0OomIa0YLKs/edit?usp=sharing" target="_blank" class="sheet-btn">📄 View Google Sheet</a>
+    </div>
+
+    <!-- Screen 2: Work Form -->
+    <div id="form-screen">
+        <button class="back-btn" onclick="goBack()">← Back to Selection</button>
+        <h2>Log Urgent Request</h2>
+        
+        <div class="header-info">
+            Assignee: <span id="display-name"></span>
+        </div>
+
+        <form id="workForm">
+            <input type="hidden" id="name" name="name">
+
+            <div class="form-group">
+                <label for="receivedDateTime">Received Date and Time</label>
+                <input type="datetime-local" id="receivedDateTime" required>
+            </div>
+
+            <div class="form-group">
+                <label for="receivedDay">Received Day</label>
+                <input type="text" id="receivedDay" readonly tabindex="-1">
+            </div>
+
+            <div class="form-group">
+                <label for="reference">Reference (Requested By / Team)</label>
+                <input type="text" id="reference" required placeholder="e.g., Marketing, John Doe">
+            </div>
+
+            <div class="form-group">
+                <label for="requirement">Requirement (Type of Work)</label>
+                <input type="text" id="requirement" required placeholder="e.g., Banner design, Print file">
+            </div>
+
+            <div class="form-group">
+                <label for="qty">Quantity</label>
+                <input type="number" id="qty" required min="1" value="1">
+            </div>
+
+            <div class="form-group">
+                <label for="urgency">Urgency</label>
+                <select id="urgency" required>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Not Urgent">Not Urgent</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="deliveryDate">Delivery Date and Time</label>
+                <input type="datetime-local" id="deliveryDate" required>
+            </div>
+
+            <div class="form-group">
+                <label for="deliveryDay">Delivery Day</label>
+                <input type="text" id="deliveryDay" readonly tabindex="-1" placeholder="Auto-fills upon date selection">
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Submit Work Log</button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    // Updated Apps Script URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwk10tSucxh7A_SZQKs0MgFSyR0Mo4cde4sa1ST0v8xvYCiKOf-0j-mz916akHsMj4X/exec";
+    
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // Helper function to format current date for datetime-local input
+    function getLocalDatetimeString() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16); 
+    }
+
+    function openForm(selectedName) {
+        document.getElementById('name').value = selectedName;
+        document.getElementById('display-name').innerText = selectedName;
+
+        document.getElementById('receivedDateTime').value = getLocalDatetimeString();
+        
+        const currentDay = days[new Date().getDay()];
+        document.getElementById('receivedDay').value = currentDay;
+
+        document.getElementById('selection-screen').style.display = 'none';
+        document.getElementById('form-screen').style.display = 'block';
+    }
+
+    function goBack() {
+        document.getElementById('form-screen').style.display = 'none';
+        document.getElementById('selection-screen').style.display = 'flex';
+        document.getElementById('workForm').reset();
+    }
+
+    document.getElementById('receivedDateTime').addEventListener('change', function(e) {
+        if(e.target.value) {
+            const selectedDate = new Date(e.target.value);
+            document.getElementById('receivedDay').value = days[selectedDate.getDay()];
+        } else {
+            document.getElementById('receivedDay').value = '';
+        }
+    });
+
+    document.getElementById('deliveryDate').addEventListener('change', function(e) {
+        if(e.target.value) {
+            const selectedDate = new Date(e.target.value);
+            document.getElementById('deliveryDay').value = days[selectedDate.getDay()];
+        } else {
+            document.getElementById('deliveryDay').value = '';
+        }
+    });
+
+    document.getElementById('workForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = "Submitting...";
+        submitBtn.disabled = true;
+
+        const payload = {
+            name: document.getElementById('name').value,
+            receivedDateTime: document.getElementById('receivedDateTime').value.replace('T', ' '),
+            receivedDay: document.getElementById('receivedDay').value,
+            reference: document.getElementById('reference').value,
+            requirement: document.getElementById('requirement').value,
+            qty: document.getElementById('qty').value,
+            urgency: document.getElementById('urgency').value,
+            deliveryDate: document.getElementById('deliveryDate').value.replace('T', ' '),
+            deliveryDay: document.getElementById('deliveryDay').value
+        };
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                alert("Work logged successfully!");
+                goBack(); 
+            } else {
+                alert("Error logging work. Please check the console.");
+                console.error(data.message);
+            }
+        })
+        .catch(error => {
+            alert("Network error. Could not connect to the Google Sheet.");
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            submitBtn.innerText = "Submit Work Log";
+            submitBtn.disabled = false;
+        });
+    });
+</script>
+</body>
+</html>
